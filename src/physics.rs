@@ -3,7 +3,7 @@ use crate::loader::TileFlags;
 use crate::resources::SceneResources;
 use hecs::{Entity, World};
 use macroquad::math::{vec2, Vec2};
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 #[derive(PartialEq, Eq)]
 enum CollisionType {
@@ -60,8 +60,8 @@ fn motion_rect(rect: &IntRect, targ_x: i32, targ_y: i32) -> IntRect {
 #[derive(PartialEq, Eq)]
 pub enum Secrecy {
     NotSecret,
-    HiddenSecret,
-    FoundSecret,
+    Hidden,
+    Found,
 }
 
 pub struct TriggerZone {
@@ -74,7 +74,7 @@ impl TriggerZone {
         Self {
             name,
             secrecy: if secret {
-                Secrecy::HiddenSecret
+                Secrecy::Hidden
             } else {
                 Secrecy::NotSecret
             },
@@ -90,6 +90,7 @@ pub struct TileBody {
     pub x: i32,
     pub y: i32,
     pub base_pos: Vec2,
+    pub door: bool,
 }
 
 impl TileBody {
@@ -100,6 +101,7 @@ impl TileBody {
         width: i32,
         data: Vec<TileFlags>,
         tiles: Vec<u16>,
+        door: bool,
     ) -> Self {
         Self {
             x,
@@ -109,6 +111,7 @@ impl TileBody {
             data,
             tiles,
             base_pos: vec2(x as f32, y as f32),
+            door,
         }
     }
 
@@ -276,7 +279,7 @@ impl Actor {
             if cy {
                 actor.vy = 0.0;
             }
-            actor.grounded = check_player_grounded(&rect, &world);
+            actor.grounded = check_player_grounded(rect, &world);
         }
     }
 }
@@ -303,7 +306,7 @@ impl PathMotion {
     pub fn new(
         x: f32,
         y: f32,
-        point_list: &Vec<(f32, f32)>,
+        point_list: &[(f32, f32)],
         speed: f32,
         motion_type: PathMotionType,
     ) -> Self {
@@ -329,22 +332,26 @@ impl PathMotion {
                 }
             }
         };
-        if index > self.next_node {
-            self.motion_type = PathMotionType::GoToNodeForward(index);
-            if index >= prev_node {
-                self.next_node = prev_node
+        match index.cmp(&self.next_node) {
+            Ordering::Greater => {
+                self.motion_type = PathMotionType::GoToNodeForward(index);
+                if index >= prev_node {
+                    self.next_node = prev_node
+                }
             }
-        } else if index < self.next_node {
-            self.motion_type = PathMotionType::GoToNodeBackward(index);
-            if index <= prev_node {
-                self.next_node = prev_node
+            Ordering::Less => {
+                self.motion_type = PathMotionType::GoToNodeBackward(index);
+                if index <= prev_node {
+                    self.next_node = prev_node
+                }
             }
-        } else {
-            // already going to the right node, but could be wrong motion type
-            self.motion_type = match self.motion_type {
-                PathMotionType::GoToNodeBackward(_) => PathMotionType::GoToNodeBackward(index),
-                _ => PathMotionType::GoToNodeForward(index),
-            };
+            Ordering::Equal => {
+                // already going to the right node, but could be wrong motion type
+                self.motion_type = match self.motion_type {
+                    PathMotionType::GoToNodeBackward(_) => PathMotionType::GoToNodeBackward(index),
+                    _ => PathMotionType::GoToNodeForward(index),
+                };
+            }
         }
     }
 
@@ -393,7 +400,15 @@ impl PathMotion {
                     pm.prec_y.round() as i32 - body.y,
                 )
             };
-            move_body(&world, &mut resources.body_index, e, dx, dy);
+            if dx != 0 || dy != 0 {
+                // try to move it
+                if !move_body(&world, &mut resources.body_index, e, dx, dy) {
+                    // body was a door that was stopped by a collision
+                    let body = world.get::<&TileBody>(e).unwrap();
+                    pm.prec_x = body.x as f32;
+                    pm.prec_y = body.y as f32;
+                }
+            }
         }
     }
 }
@@ -423,59 +438,67 @@ fn move_actor(
     let targ_y = actor.prec_y.round() as i32;
     let mut collided_y = false;
     let blockers = body_index.entities(&motion_rect(rect, targ_x, targ_y));
-    if targ_x < rect.x {
-        // handle moving left
-        let mut d = rect.x - targ_x;
-        for id in blockers.iter() {
-            d = d.min(
-                world
-                    .get::<&TileBody>(*id)
-                    .unwrap()
-                    .collide_dist_left(rect, d),
-            );
+    match targ_x.cmp(&rect.x) {
+        Ordering::Less => {
+            // handle moving left
+            let mut d = rect.x - targ_x;
+            for id in blockers.iter() {
+                d = d.min(
+                    world
+                        .get::<&TileBody>(*id)
+                        .unwrap()
+                        .collide_dist_left(rect, d),
+                );
+            }
+            rect.x -= d;
         }
-        rect.x -= d;
-    } else if targ_x > rect.x {
-        // handle moving right
-        let mut d = targ_x - rect.x;
-        for id in blockers.iter() {
-            d = d.min(
-                world
-                    .get::<&TileBody>(*id)
-                    .unwrap()
-                    .collide_dist_right(rect, d),
-            );
+        Ordering::Equal => (),
+        Ordering::Greater => {
+            // handle moving right
+            let mut d = targ_x - rect.x;
+            for id in blockers.iter() {
+                d = d.min(
+                    world
+                        .get::<&TileBody>(*id)
+                        .unwrap()
+                        .collide_dist_right(rect, d),
+                );
+            }
+            rect.x += d;
         }
-        rect.x += d;
     }
     if rect.x != targ_x {
         actor.prec_x = rect.x as f32;
         collided_x = true;
     }
-    if targ_y < rect.y {
-        // handle moving up
-        let mut d = rect.y - targ_y;
-        for id in blockers.iter() {
-            d = d.min(
-                world
-                    .get::<&TileBody>(*id)
-                    .unwrap()
-                    .collide_dist_up(rect, d),
-            );
+    match targ_y.cmp(&rect.y) {
+        Ordering::Less => {
+            // handle moving up
+            let mut d = rect.y - targ_y;
+            for id in blockers.iter() {
+                d = d.min(
+                    world
+                        .get::<&TileBody>(*id)
+                        .unwrap()
+                        .collide_dist_up(rect, d),
+                );
+            }
+            rect.y -= d;
         }
-        rect.y -= d;
-    } else if targ_y > rect.y {
-        // handle moving down
-        let mut d = targ_y - rect.y;
-        for id in blockers.iter() {
-            d = d.min(
-                world
-                    .get::<&TileBody>(*id)
-                    .unwrap()
-                    .collide_dist_down(rect, d),
-            );
+        Ordering::Equal => (),
+        Ordering::Greater => {
+            // handle moving down
+            let mut d = targ_y - rect.y;
+            for id in blockers.iter() {
+                d = d.min(
+                    world
+                        .get::<&TileBody>(*id)
+                        .unwrap()
+                        .collide_dist_down(rect, d),
+                );
+            }
+            rect.y += d;
         }
-        rect.y += d;
     }
     if rect.y != targ_y {
         actor.prec_y = rect.y as f32;
@@ -484,7 +507,14 @@ fn move_actor(
     (collided_x, collided_y)
 }
 
-fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx: i32, vy: i32) {
+fn move_body(
+    world: &World,
+    spatial_index: &mut SpatialIndex,
+    index: Entity,
+    vx: i32,
+    vy: i32,
+) -> bool {
+    let mut stopped = false;
     let body = world.get::<&mut TileBody>(index).unwrap();
     spatial_index.remove_at(index, &body.get_rect());
     drop(body);
@@ -504,16 +534,21 @@ fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx:
                 should_move.insert(e);
             }
         }
+        if body.door && !should_move.is_empty() {
+            body.x -= vx.signum();
+            stopped = true;
+            break;
+        }
         drop(body);
         for e in &should_move {
             let mut actor = world.get::<&mut Actor>(*e).unwrap();
             let mut rect = world.get::<&mut IntRect>(*e).unwrap();
             move_actor(
-                &mut *actor,
-                &mut *rect,
+                &mut actor,
+                &mut rect,
                 vx.signum() as f32,
                 0.0,
-                &world,
+                world,
                 spatial_index,
             );
         }
@@ -523,7 +558,7 @@ fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx:
         for e in should_move {
             let mut actor = world.get::<&mut Actor>(e).unwrap();
             let rect = world.get::<&mut IntRect>(e).unwrap();
-            if body.collide(&*rect, CollisionType::Blocker) {
+            if body.collide(&rect, CollisionType::Blocker) {
                 actor.crushed = true;
             }
         }
@@ -542,16 +577,21 @@ fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx:
                 should_move.insert(e);
             }
         }
+        if body.door && !should_move.is_empty() {
+            body.y -= vy.signum();
+            stopped = true;
+            break;
+        }
         drop(body);
         for e in &should_move {
             let mut actor = world.get::<&mut Actor>(*e).unwrap();
             let mut rect = world.get::<&mut IntRect>(*e).unwrap();
             move_actor(
-                &mut *actor,
-                &mut *rect,
+                &mut actor,
+                &mut rect,
                 0.0,
                 vy.signum() as f32,
-                &world,
+                world,
                 spatial_index,
             );
         }
@@ -560,7 +600,7 @@ fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx:
         for e in should_move {
             let mut actor = world.get::<&mut Actor>(e).unwrap();
             let rect = world.get::<&mut IntRect>(e).unwrap();
-            if body.collide(&*rect, CollisionType::Blocker) {
+            if body.collide(&rect, CollisionType::Blocker) {
                 actor.crushed = true;
             }
         }
@@ -568,12 +608,13 @@ fn move_body(world: &World, spatial_index: &mut SpatialIndex, index: Entity, vx:
     let body = world.get::<&mut TileBody>(index).unwrap();
     spatial_index.insert_at(index, &body.get_rect());
     drop(body);
+    !stopped
 }
 
 fn check_player_grounded(player_rect: &IntRect, world: &World) -> bool {
     world.query::<&TileBody>().iter().any(|(_, c)| {
         c.collide(
-            &feet_rect(&player_rect),
+            &feet_rect(player_rect),
             CollisionType::TopOfBlockerOrPlatform,
         )
     })

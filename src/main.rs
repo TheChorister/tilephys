@@ -1,17 +1,16 @@
 use camera::PlayerCamera;
 use enemy::update_enemies;
-use enum_iterator::first;
 use hecs::CommandBuffer;
 use input::{Input, VirtualKey};
-use levels::Level;
+use macroquad::experimental::coroutines::{start_coroutine, stop_all_coroutines};
 use macroquad::prelude::*;
 use physics::{Actor, PathMotion};
-use pickup::Pickup;
+use pickup::{Pickup, WeaponPickup};
 use player::Controller;
 use projectile::Projectile;
 use render::Renderer;
 use resources::load_assets;
-use scene::Scene;
+use scene::{Scene, new_prelevel};
 use timer::Timer;
 use transition::TransitionEffectType;
 use vfx::update_vfx;
@@ -21,7 +20,7 @@ mod draw;
 mod enemy;
 mod index;
 mod input;
-mod levels;
+mod level;
 mod loader;
 mod messages;
 mod physics;
@@ -38,6 +37,7 @@ mod timer;
 mod transition;
 mod vfx;
 mod visibility;
+mod weapon;
 
 const RENDER_W: u32 = 320;
 const RENDER_H: u32 = 200;
@@ -55,21 +55,13 @@ fn window_conf() -> Conf {
 #[macroquad::main(window_conf())]
 async fn main() {
     set_pc_assets_folder("assets");
-    /*let argv: Vec<String> = std::env::args().collect();
-    let name = if argv.len() > 1 {
-        argv[1].clone()
-    } else {
-        "intro".to_owned()
-    };*/
-
-    let mut level: Level = first::<Level>().unwrap();
-    let mut scene: Scene = level.init_scene(false).await;
+    let argv: Vec<String> = std::env::args().collect();
 
     let mut renderer = Renderer::new(RENDER_W, RENDER_H);
     let mut clock = Timer::new();
     let mut input = Input::new();
 
-    let coro = macroquad::experimental::coroutines::start_coroutine(load_assets());
+    let coro = start_coroutine(load_assets());
     let mut result = None;
     let mut loading_frames = 0;
     while result.is_none() {
@@ -82,6 +74,14 @@ async fn main() {
     }
     let mut assets = result.unwrap();
 
+    let info = if argv.len() > 1 {
+        assets.get_level_with_path(&argv[1])
+    } else {
+        assets.get_first_level()
+    };
+
+    let mut scene: Scene = new_prelevel(info, false).await;
+
     loop {
         match assets.next_scene {
             None => (),
@@ -91,17 +91,13 @@ async fn main() {
                 renderer.start_transition(typ);
                 scene = next_scene;
                 assets.next_scene = None;
-                println!("transitioning to next scene");
             }
         }
 
         input.update();
 
         match &mut scene {
-            Scene::PreGame => {
-                
-            },
-            Scene::PreLevel(coro, fast) => {
+            Scene::PreLevel(_n, coro, fast) => {
                 for _ in 0..clock.get_num_updates() {
                     renderer.tick();
                 }
@@ -116,11 +112,12 @@ async fn main() {
                 for _ in 0..clock.get_num_updates() {
                     let mut buffer = CommandBuffer::new();
                     PathMotion::apply(resources);
+                    Pickup::update(resources, &mut buffer);
+                    WeaponPickup::update(resources);
                     Controller::update(resources, &mut buffer, &input);
                     update_enemies(resources, &mut buffer);
                     Actor::update(resources);
                     Projectile::update(resources, &mut buffer);
-                    Pickup::update(resources, &mut buffer);
                     update_vfx(resources, &mut buffer);
                     buffer.run_on(&mut resources.world_ref.lock().unwrap());
 
@@ -137,19 +134,22 @@ async fn main() {
                     }
 
                     for t in &resources.triggers {
-                        resources.script_engine.call_entry_point(&t);
+                        resources.script_engine.call_entry_point(t);
                     }
                     resources.triggers.clear();
+                    resources.script_engine.schedule_queued_funcs();
 
                     if input.is_pressed(VirtualKey::DebugRestart) {
+                        stop_all_coroutines();
                         assets.next_scene = Some((
                             // skip the transition for faster debugging
-                            level.init_scene(true).await,
+                            new_prelevel(resources.stats.info.clone(), true).await,
                             TransitionEffectType::Shatter,
                         ));
                     }
                     if input.is_pressed(VirtualKey::DebugWin) || resources.script_engine.win_flag()
                     {
+                        stop_all_coroutines();
                         assets.next_scene = Some((
                             crate::scene::Scene::PostLevel(resources.stats.clone()),
                             TransitionEffectType::Shatter,
@@ -166,21 +166,21 @@ async fn main() {
                     } */
                 }
             }
-            Scene::PostLevel(_) => {
+            Scene::PostLevel(stats) => {
                 for _ in 0..clock.get_num_updates() {
                     renderer.tick();
                 }
                 if input.is_any_pressed() {
-                    level = level.next();
+                    let info = assets.get_next_level(&stats.info);
                     assets.next_scene = Some((
-                        level.init_scene(false).await,
+                        new_prelevel(info, false).await,
                         TransitionEffectType::Shatter,
                     ));
                 }
             }
         }
 
-        renderer.render_scene(&scene, &assets, level.as_level_name());
+        renderer.render_scene(&scene, &assets);
         next_frame().await;
     }
 }

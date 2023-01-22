@@ -1,13 +1,15 @@
 use crate::index::SpatialIndex;
+use crate::level::{load_level_info, LevelInfo};
 use crate::messages::Messages;
 use crate::render::load_flash_material;
 use crate::scene::Scene;
 use crate::script::ScriptEngine;
 use crate::stats::LevelStats;
 use crate::transition::TransitionEffectType;
+use crate::weapon::Weapon;
 use hecs::{Entity, World};
 use macroquad::prelude::*;
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 
 pub struct GlobalAssets {
@@ -23,11 +25,13 @@ pub struct GlobalAssets {
     pub pregame_bg: Texture2D,
     pub controls: Texture2D,
     pub flash_material: Material,
+    pub levels: Vec<LevelInfo>,
     // should this be here?
     pub next_scene: Option<(Scene, TransitionEffectType)>,
 }
 
 pub async fn load_assets() -> GlobalAssets {
+    let levels = load_level_info().await;
     GlobalAssets {
         sky: load_texture("sky.png").await.unwrap(),
         player_sprite: load_texture("princess.png").await.unwrap(),
@@ -41,6 +45,7 @@ pub async fn load_assets() -> GlobalAssets {
         pregame_bg: load_texture("bg_cropped.png").await.unwrap(),
         controls: load_texture("controls.png").await.unwrap(),
         flash_material: load_flash_material(),
+        levels,
         next_scene: None,
     }
 }
@@ -57,6 +62,7 @@ pub struct SceneResources {
     pub messages: Messages,
     pub stats: LevelStats,
     pub triggers: HashSet<String>,
+    pub weapons: VecDeque<Box<dyn Weapon>>,
 }
 
 #[derive(Clone)]

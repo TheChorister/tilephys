@@ -4,7 +4,7 @@ use hecs::{Entity, World};
 use macroquad::file::load_string;
 use rhai::packages::{Package, StandardPackage};
 use rhai::plugin::*;
-use rhai::{def_package, Engine, Scope, AST};
+use rhai::{def_package, Engine, FnPtr, Scope, AST};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -17,6 +17,20 @@ pub struct ScriptEntityProxy {
 impl ScriptEntityProxy {
     pub fn new(world_ref: Arc<Mutex<World>>, id: Entity) -> Self {
         Self { world_ref, id }
+    }
+}
+
+pub struct ScriptFlags {
+    win: bool,
+    queued_funcs: Vec<(rhai::INT, FnPtr)>,
+}
+
+impl ScriptFlags {
+    fn new() -> Self {
+        Self {
+            win: false,
+            queued_funcs: Vec::new(),
+        }
     }
 }
 
@@ -40,7 +54,6 @@ mod script_interface {
                 PathMotion::new(x, y, &path, 0.0, PathMotionType::Static),
             )
             .unwrap();
-        println!("set_path ok");
     }
 
     pub fn set_motion(this: &mut EntityProxy, motion_type: PathMotionType, speed: f32) {
@@ -48,7 +61,6 @@ mod script_interface {
         let mut pm = world.get::<&mut PathMotion>(this.id).unwrap(); // fails if no path set
         pm.motion_type = motion_type;
         pm.speed = speed;
-        println!("set_motion ok");
     }
 
     pub fn go_to(this: &mut EntityProxy, index: i32, speed: f32) {
@@ -66,7 +78,11 @@ mod script_interface {
         s.enabled = on;
     }
 
-    // Flags methods
+    // Context methods
+
+    pub fn after_frames(this: &mut Flags, n: rhai::INT, func: FnPtr) {
+        this.lock().unwrap().queued_funcs.push((n, func));
+    }
 
     pub fn win(this: &mut Flags) {
         this.lock().unwrap().win = true;
@@ -79,10 +95,6 @@ def_package! {
     } |> |engine| {
         engine.register_type_with_name::<PathMotionType>("PathMotionType");
     }
-}
-
-pub struct ScriptFlags {
-    win: bool,
 }
 
 pub struct ScriptEngine {
@@ -100,11 +112,11 @@ impl ScriptEngine {
     ) -> Self {
         let mut engine = Engine::new_raw();
         let mut scope = Scope::new();
-        let flags = Arc::new(Mutex::new(ScriptFlags { win: false }));
+        let flags = Arc::new(Mutex::new(ScriptFlags::new()));
 
         let pkg = ScriptPackage::new();
         pkg.register_into_engine(&mut engine);
-        scope.push("flags", Arc::clone(&flags));
+        scope.push("context", Arc::clone(&flags));
         scope.push("static", PathMotionType::Static);
         scope.push("forward_once", PathMotionType::ForwardOnce);
         scope.push("forward_cycle", PathMotionType::ForwardCycle);
@@ -126,7 +138,7 @@ impl ScriptEngine {
     pub async fn load_file(&mut self, path: &str) {
         self.ast = Some(
             self.engine
-                .compile(load_string(path.into()).await.unwrap())
+                .compile(load_string(path).await.unwrap())
                 .unwrap(),
         );
     }
@@ -136,8 +148,31 @@ impl ScriptEngine {
             None => panic!("no script loaded"),
             Some(ast) => self
                 .engine
-                .call_fn::<()>(&mut self.scope, &ast, name, ())
-                .unwrap_or_else(|err| println!("calling entry point {} failed: {:?}", name, err)),
+                .call_fn::<()>(&mut self.scope, ast, name, ())
+                .unwrap_or_else(|err| match *err {
+                    // if the entry point itself didn't exist, that's not an error
+                    EvalAltResult::ErrorFunctionNotFound(fname, _) if name == fname => (),
+                    _ => {
+                        println!("calling entry point {} failed: {:?}", name, err)
+                    }
+                }),
+        }
+    }
+
+    pub fn schedule_queued_funcs(&mut self) {
+        let mut context = self.flags.lock().unwrap();
+        let mut funcs = Vec::new();
+        for (n, f) in &mut context.queued_funcs {
+            *n -= 1;
+            if *n == 0 {
+                funcs.push(f.clone());
+            }
+        }
+        context.queued_funcs.retain(|(n, _)| *n > 0);
+        drop(context);
+        for f in funcs {
+            f.call::<()>(&self.engine, self.ast.as_ref().unwrap(), ())
+                .unwrap();
         }
     }
 

@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use crate::draw::draw;
+use crate::level::LevelInfo;
 use crate::messages::Messages;
 use crate::player::Controller;
 use crate::resources::{GlobalAssets, SceneResources};
@@ -119,14 +120,11 @@ impl Renderer {
         }
     }
 
-    pub(crate) fn render_scene(&self, scene: &Scene, assets: &GlobalAssets, level_name: &str) {
+    pub(crate) fn render_scene(&self, scene: &Scene, assets: &GlobalAssets) {
         // draw the current scene
         match scene {
-            Scene::PreGame => {
-                self.draw_pregame(assets);
-            },
-            Scene::PreLevel(_, _) => {
-                self.draw_prelevel(assets, level_name);
+            Scene::PreLevel(n, _, _) => {
+                self.draw_prelevel(n, assets);
             }
             Scene::PlayLevel(resources) => {
                 self.draw_world(resources, assets);
@@ -204,19 +202,7 @@ impl Renderer {
         self.render_to_screen();
     }
 
-    pub(crate) fn draw_pregame(&self, assets: &GlobalAssets) {
-        gl_use_default_material();
-        set_camera(&get_camera_for_target(
-            &self.draw_target,
-            vec2(self.width / 2., self.height / 2.),
-            Origin::TopLeft,
-        ));
-        let mouse_pos = mouse_position_local().clamp(Vec2::NEG_ONE, Vec2::ONE) * Vec2::new(-self.width/20.0, -self.height/20.0);// + Vec2::new(self.width/2.0, self.height/2.0);
-        //println!("{:?}", mouse_pos);
-        draw_texture(assets.pregame_bg, mouse_pos.x, mouse_pos.y, WHITE);
-    }
-
-    pub(crate) fn draw_prelevel(&self, assets: &GlobalAssets, level_name: &str) {
+    pub(crate) fn draw_prelevel(&self, level_info: &LevelInfo, assets: &GlobalAssets) {
         gl_use_default_material();
         set_camera(&get_camera_for_target(
             &self.draw_target,
@@ -234,9 +220,9 @@ impl Renderer {
                 );
             }
         }
-        let td1 = measure_text(level_name, None, 32, 1.0);
+        let td1 = measure_text(&level_info.name, None, 32, 1.0);
         draw_text(
-            level_name,
+            &level_info.name,
             wvdc + 160.0 - td1.width / 2.,
             wvdc + 100.0,
             32.0,
@@ -279,7 +265,7 @@ impl Renderer {
             );
         }
         self.draw_centred_text("Completed", 16, 72.0);
-        self.draw_centred_text("Entryway", 32, 100.0);
+        self.draw_centred_text(&stats.info.name, 32, 100.0);
         self.draw_centred_text(&format!("Time: {}", stats.pretty_time()), 16, 128.0);
         self.draw_centred_text(
             &format!("Enemies defeated: {}/{}", stats.kills, stats.max_kills),

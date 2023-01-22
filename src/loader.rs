@@ -2,9 +2,10 @@ use crate::camera::add_camera;
 use crate::draw::PlayerSprite;
 use crate::enemy::{add_enemy, EnemyKind};
 use crate::index::SpatialIndex;
+use crate::level::LevelInfo;
 use crate::messages::Messages;
 use crate::physics::{Actor, IntRect, TileBody, TriggerZone};
-use crate::pickup::add_pickup;
+use crate::pickup::{add_pickup, add_weapon};
 use crate::player::Controller;
 use crate::resources::SceneResources;
 use crate::resources::TilesetInfo;
@@ -13,11 +14,12 @@ use crate::script::ScriptEngine;
 use crate::stats::LevelStats;
 use crate::switch::add_switch;
 use crate::visibility::compute_obscurers;
+use crate::weapon::{new_weapon, WeaponType};
 use bitflags::bitflags;
 use hecs::{Entity, World};
 use macroquad::prelude::*;
 use macroquad::{file::load_file, texture::load_texture};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::Cursor;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -77,7 +79,7 @@ impl tiled::ResourceReader for AsyncPreloadReader {
         self.cache
             .get(path)
             .map(|data| Cursor::new(Arc::clone(data)))
-            .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))
+            .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::NotFound))
     }
 }
 
@@ -94,9 +96,8 @@ impl LoadingManager {
     }
 
     // eventually this should probably not use String as its error type
-    pub(crate) async fn load_level(&mut self, name: &str) -> Result<Scene, String> {
-        let map_name = format!("{}.tmx", name).to_owned();
-        println!("attempting to load level: {:?}", map_name);
+    pub(crate) async fn load_level(&mut self, info: &LevelInfo) -> Result<Scene, String> {
+        let map_name = format!("{}.tmx", info.path).to_owned();
         self.loader.reader_mut().preload(&map_name).await;
 
         let map = loop {
@@ -106,7 +107,6 @@ impl LoadingManager {
                     if path.as_os_str().to_str().unwrap() == map_name {
                         return Err("Resource loading error".to_owned());
                     }
-                    println!("loading additional resource: {:?}", path);
                     self.loader
                         .reader_mut()
                         .preload(path.as_os_str().to_str().unwrap())
@@ -115,7 +115,6 @@ impl LoadingManager {
                 Err(other_err) => return Err(other_err.to_string()),
             }
         };
-        println!("map data loaded");
 
         let mut world: World = World::new();
         let mut ids: HashMap<String, Entity> = HashMap::new();
@@ -205,6 +204,7 @@ impl LoadingManager {
                             tiles.push(t.map(|t| t.id() as u16).unwrap_or(0));
                         }
                     }
+                    let door = layer.properties.contains_key("door");
                     let body = TileBody::new(
                         x0 * map.tile_width as i32,
                         y0 * map.tile_height as i32,
@@ -212,6 +212,7 @@ impl LoadingManager {
                         (x1 - x0) + 1,
                         data,
                         tiles,
+                        door,
                     );
                     let rect = body.get_rect();
                     let id = world.spawn((body,));
@@ -285,6 +286,38 @@ impl LoadingManager {
                                 } else if obj_type == "heart" {
                                     add_pickup(&mut world, *x as i32, *y as i32);
                                     max_items += 1;
+                                } else if obj_type == "weapon_reverse_laser" {
+                                    add_weapon(
+                                        &mut world,
+                                        *x as i32,
+                                        *y as i32,
+                                        WeaponType::ReverseLaser,
+                                    );
+                                    max_items += 1;
+                                } else if obj_type == "weapon_auto_laser" {
+                                    add_weapon(
+                                        &mut world,
+                                        *x as i32,
+                                        *y as i32,
+                                        WeaponType::AutoLaser,
+                                    );
+                                    max_items += 1;
+                                } else if obj_type == "weapon_burst_laser" {
+                                    add_weapon(
+                                        &mut world,
+                                        *x as i32,
+                                        *y as i32,
+                                        WeaponType::BurstLaser,
+                                    );
+                                    max_items += 1;
+                                } else if obj_type == "weapon_double_laser" {
+                                    add_weapon(
+                                        &mut world,
+                                        *x as i32,
+                                        *y as i32,
+                                        WeaponType::DoubleLaser,
+                                    );
+                                    max_items += 1;
                                 } else if obj_type == "switch" {
                                     let id =
                                         add_switch(&mut world, name.clone(), *x as i32, *y as i32);
@@ -304,7 +337,9 @@ impl LoadingManager {
         let world_ref = Arc::new(Mutex::new(world));
         let mut script_engine =
             ScriptEngine::new(Arc::clone(&world_ref), Arc::new(ids), Arc::new(paths));
-        script_engine.load_file(&format!("{}.rhai", name)).await;
+        script_engine
+            .load_file(&format!("{}.rhai", info.path))
+            .await;
         script_engine.call_entry_point("init");
 
         let player_start = (psx, psy);
@@ -325,7 +360,9 @@ impl LoadingManager {
 
         compute_obscurers(&mut world_ref.lock().unwrap());
 
-        let stats = LevelStats::new(max_kills, max_items, max_secrets);
+        let stats = LevelStats::new(info.clone(), max_kills, max_items, max_secrets);
+        let mut weapons = VecDeque::with_capacity(4);
+        weapons.push_back(new_weapon(WeaponType::BackupLaser));
 
         let resources = SceneResources {
             world_ref,
@@ -339,12 +376,12 @@ impl LoadingManager {
             messages: Messages::new(),
             stats,
             triggers: HashSet::new(),
+            weapons,
         };
-        println!("about to return from load_level");
         Ok(Scene::PlayLevel(resources))
     }
 }
 
-pub async fn load_level(name: String) -> Result<Scene, String> {
-    LoadingManager::new().load_level(&name).await
+pub async fn load_level(info: LevelInfo) -> Result<Scene, String> {
+    LoadingManager::new().load_level(&info).await
 }

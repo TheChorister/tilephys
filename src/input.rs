@@ -5,6 +5,13 @@ use macroquad::{
 };
 use std::collections::HashSet;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum KeyState {
+    Pressed,
+    Held,
+    NotPressed,
+}
+
 #[derive(PartialEq, Hash, Eq, Clone, Copy)]
 pub enum VirtualKey {
     Left,
@@ -12,17 +19,21 @@ pub enum VirtualKey {
     Jump,
     Fire,
     Interact,
+    PrevWeapon,
+    NextWeapon,
     DebugRestart,
     DebugWin,
     DebugKill,
 }
 
-const ALL_KEYS: [(KeyCode, VirtualKey); 8] = [
+const ALL_KEYS: [(KeyCode, VirtualKey); 10] = [
     (KeyCode::Left, VirtualKey::Left),
     (KeyCode::Right, VirtualKey::Right),
     (KeyCode::Z, VirtualKey::Jump),
     (KeyCode::X, VirtualKey::Fire),
     (KeyCode::C, VirtualKey::Interact),
+    (KeyCode::A, VirtualKey::PrevWeapon),
+    (KeyCode::S, VirtualKey::NextWeapon),
     (KeyCode::R, VirtualKey::DebugRestart),
     (KeyCode::W, VirtualKey::DebugWin),
     (KeyCode::K, VirtualKey::DebugKill),
@@ -91,6 +102,16 @@ impl Input {
 
     pub fn is_pressed(&self, vk: VirtualKey) -> bool {
         self.pressed.contains(&vk)
+    }
+
+    pub fn state(&self, vk: VirtualKey) -> KeyState {
+        if self.pressed.contains(&vk) {
+            return KeyState::Pressed;
+        }
+        if self.down.contains(&vk) {
+            return KeyState::Held;
+        }
+        KeyState::NotPressed
     }
 
     pub fn is_any_pressed(&self) -> bool {

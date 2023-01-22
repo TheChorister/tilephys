@@ -1,5 +1,8 @@
+use crate::level::LevelInfo;
+
 #[derive(Clone)]
 pub struct LevelStats {
+    pub info: LevelInfo,
     pub frames: u32,
     pub kills: u32,
     pub max_kills: u32,
@@ -10,8 +13,9 @@ pub struct LevelStats {
 }
 
 impl LevelStats {
-    pub fn new(max_kills: u32, max_items: u32, max_secrets: u32) -> Self {
+    pub fn new(info: LevelInfo, max_kills: u32, max_items: u32, max_secrets: u32) -> Self {
         Self {
+            info,
             frames: 0,
             kills: 0,
             max_kills,
