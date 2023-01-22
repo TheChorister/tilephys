@@ -94,7 +94,7 @@ async fn main() {
             }
         }
 
-        input.update();
+        input.update(&renderer);
 
         match &mut scene {
             Scene::PreLevel(_n, coro, fast) => {
@@ -180,7 +180,7 @@ async fn main() {
             }
         }
 
-        renderer.render_scene(&scene, &assets);
+        renderer.render_scene(&scene, &assets, &input);
         next_frame().await;
     }
 }

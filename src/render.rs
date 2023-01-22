@@ -1,7 +1,6 @@
-use std::f32::consts::PI;
-
 use crate::draw::draw;
 use crate::level::LevelInfo;
+use crate::input::{Input, ScreenButtons};
 use crate::messages::Messages;
 use crate::player::Controller;
 use crate::resources::{GlobalAssets, SceneResources};
@@ -10,6 +9,7 @@ use crate::stats::LevelStats;
 use crate::transition::{new_transition, TransitionEffect, TransitionEffectType};
 use crate::vfx::draw_vfx;
 use crate::visibility::draw_visibility;
+use enum_iterator::all;
 use macroquad::prelude::*;
 use miniquad::graphics::{BlendFactor, BlendState, BlendValue, Equation};
 
@@ -40,8 +40,8 @@ fn get_camera_for_target(target: &RenderTarget, camera: Vec2, o: Origin) -> Came
 }
 
 pub struct Renderer {
-    width: f32,
-    height: f32,
+    pub width: f32,
+    pub height: f32,
     final_width: f32,
     final_height: f32,
     transition: Option<(RenderTarget, Box<dyn TransitionEffect>)>,
@@ -120,14 +120,28 @@ impl Renderer {
         }
     }
 
-    pub(crate) fn render_scene(&self, scene: &Scene, assets: &GlobalAssets) {
+    pub fn format_abs_pos(&self, pos: (f32, f32)) -> (f32, f32) {
+        let x = pos.0;
+        let y = pos.1;
+        let sw = screen_width();
+        let sh = screen_height();
+        let scale = (sw / self.final_width)
+            .min(sh / self.final_height)
+            .floor()
+            .max(1.);
+        let zoomed_width = self.final_width * scale;
+        let zoomed_height = self.final_height * scale;
+        return ((x - ((sw - zoomed_width) / 2.))/scale, (y - ((sh - zoomed_height) / 2.))/scale);
+    }
+
+    pub(crate) fn render_scene(&self, scene: &Scene, assets: &GlobalAssets, input: &Input) {
         // draw the current scene
         match scene {
             Scene::PreLevel(n, _, _) => {
                 self.draw_prelevel(n, assets);
             }
             Scene::PlayLevel(resources) => {
-                self.draw_world(resources, assets);
+                self.draw_world(resources, assets, input);
             }
             Scene::PostLevel(stats) => {
                 self.draw_postlevel(stats);
@@ -296,7 +310,7 @@ impl Renderer {
         );
     }
 
-    pub(crate) fn draw_world(&self, resources: &SceneResources, assets: &GlobalAssets) {
+    pub(crate) fn draw_world(&self, resources: &SceneResources, assets: &GlobalAssets, input: &Input) {
         gl_use_default_material();
         set_camera(&get_camera_for_target(
             &self.draw_target,
@@ -450,20 +464,15 @@ impl Renderer {
             );
         }
 
-        for rot in 0..3 {
+        for btn in all::<ScreenButtons>() {
             draw_texture_ex(
                 assets.controls,
-                wvdc + 64.0 + 8. * rot as f32,
-                self.height - wvdc - 16. - (rot % 2) as f32 * 12.,// + 16.0 * (rot % 2) as f32,
+                btn.get_pos().0 as f32,
+                btn.get_pos().1 as f32,
                 WHITE,
-                DrawTextureParams {
-                    rotation: rot as f32 * PI / 2.,
-                    flip_x: true,
-                    ..Default::default()
-                }
-            )
+                btn.get_texture_params(!(input.is_hovered(btn.get_vk()) || input.is_down(btn.get_vk()))),
+            );
         }
-        
     }
 
     pub fn start_transition(&mut self, typ: TransitionEffectType) {
