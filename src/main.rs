@@ -4,6 +4,7 @@ use enum_iterator::first;
 use hecs::CommandBuffer;
 use input::{Input, VirtualKey};
 use levels::Level;
+use macroquad::experimental::coroutines::{start_coroutine, stop_all_coroutines};
 use macroquad::prelude::*;
 use physics::{Actor, PathMotion};
 use pickup::Pickup;
@@ -69,7 +70,7 @@ async fn main() {
     let mut clock = Timer::new();
     let mut input = Input::new();
 
-    let coro = macroquad::experimental::coroutines::start_coroutine(load_assets());
+    let coro = start_coroutine(load_assets());
     let mut result = None;
     let mut loading_frames = 0;
     while result.is_none() {
@@ -95,12 +96,9 @@ async fn main() {
             }
         }
 
-        input.update();
+        input.update(&renderer);
 
         match &mut scene {
-            Scene::PreGame => {
-                
-            },
             Scene::PreLevel(coro, fast) => {
                 for _ in 0..clock.get_num_updates() {
                     renderer.tick();
@@ -140,8 +138,10 @@ async fn main() {
                         resources.script_engine.call_entry_point(&t);
                     }
                     resources.triggers.clear();
+                    resources.script_engine.schedule_queued_funcs();
 
                     if input.is_pressed(VirtualKey::DebugRestart) {
+                        stop_all_coroutines();
                         assets.next_scene = Some((
                             // skip the transition for faster debugging
                             level.init_scene(true).await,
@@ -150,6 +150,7 @@ async fn main() {
                     }
                     if input.is_pressed(VirtualKey::DebugWin) || resources.script_engine.win_flag()
                     {
+                        stop_all_coroutines();
                         assets.next_scene = Some((
                             crate::scene::Scene::PostLevel(resources.stats.clone()),
                             TransitionEffectType::Shatter,
@@ -180,7 +181,7 @@ async fn main() {
             }
         }
 
-        renderer.render_scene(&scene, &assets, level.as_level_name());
+        renderer.render_scene(&scene, &assets, &input, level.as_level_name());
         next_frame().await;
     }
 }

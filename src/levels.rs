@@ -4,6 +4,7 @@ use crate::scene::{new_prelevel, Scene};
 #[derive(Sequence)]
 pub enum Level {
     Intro,
+    Chasm,
     Level1,
 }
 
@@ -13,9 +14,12 @@ impl Level {
             Self::Intro => {
                 return "intro";
             },
+            Self::Chasm => {
+                return "chasm";
+            },
             Self::Level1 => {
                 return "level1";
-            }
+            },
         }
     }
 
@@ -24,9 +28,12 @@ impl Level {
             Self::Intro => {
                 return "Entryway";
             },
+            Self::Chasm => {
+                return "Chasm"
+            },
             Self::Level1 => {
-                return "Level 1";
-            }
+                return "Run!";
+            },
         }
     }
 
@@ -36,7 +43,6 @@ impl Level {
     }
 
     pub async fn init_scene(&self, fast: bool) -> Scene {
-        return new_prelevel(self.as_map_name().to_string().clone(), fast).await;
-        Scene::PreGame
+        new_prelevel(self.as_map_name().to_string().clone(), fast).await
     }
 }
