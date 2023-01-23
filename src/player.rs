@@ -13,6 +13,7 @@ pub struct Controller {
     jump_frames: u32,
     zones: HashSet<String>,
     pub touched_weapons: HashMap<WeaponType, Entity>,
+    pub enabled_abilites: HashMap<AbilityType, Entity>,
     facing: i8,
     fire_timer: u32,
     hurt_timer: u8,
