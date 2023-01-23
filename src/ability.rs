@@ -57,10 +57,9 @@ impl Ability for Invulnerability {
         player_rect: &IntRect,
         key_state: KeyState,
     ) -> bool {
-            self.timeRemaining = self.timeAllowed - self.start_time;
-            if self.timeRemaining <= 0 {
-                self.enabled = false;
-            }
+        self.timeRemaining = self.timeAllowed - self.start_time;
+        if self.timeRemaining <= 0 {
+            self.enabled = false;
         }
     }
 }
