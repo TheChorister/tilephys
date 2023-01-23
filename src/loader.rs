@@ -1,3 +1,4 @@
+use crate::ability::Abilities;
 use crate::camera::add_camera;
 use crate::draw::PlayerSprite;
 use crate::enemy::{add_enemy, EnemyKind};
@@ -377,6 +378,7 @@ impl LoadingManager {
             stats,
             triggers: HashSet::new(),
             weapons,
+            abilities: Abilities::new(),
         };
         Ok(Scene::PlayLevel(resources))
     }

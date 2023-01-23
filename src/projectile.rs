@@ -66,7 +66,7 @@ impl Projectile {
                     .iter()
                 {
                     if rect.intersects(p_rect) {
-                        c.hurt();
+                        c.hurt(resources);
                         buffer.despawn(id);
                         let sx = if proj.vx > 0.0 { rect.x + 7 } else { rect.x };
                         buffer.spawn((ZapFlash::new_from_centre(sx, rect.y + 2),));

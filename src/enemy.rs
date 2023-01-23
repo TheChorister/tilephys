@@ -320,7 +320,7 @@ pub fn update_enemies(resources: &mut SceneResources, buffer: &mut CommandBuffer
         if let Some((c, p_rect)) = q.get() {
             for (_, (_, rect)) in world.query::<(&EnemyContactDamage, &IntRect)>().iter() {
                 if rect.intersects(p_rect) {
-                    c.hurt();
+                    c.hurt(resources);
                     break; // player will get damage invulnerability so might as well stop
                 }
             }

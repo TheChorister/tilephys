@@ -1,4 +1,4 @@
-use crate::ability::AbilityType;
+use crate::ability::{AbilityType, Ability};
 use crate::draw::PlayerSprite;
 use crate::input::{Input, VirtualKey};
 use crate::physics::{Actor, IntRect, Secrecy, TriggerZone};
@@ -14,12 +14,10 @@ pub struct Controller {
     jump_frames: u32,
     zones: HashSet<String>,
     pub touched_weapons: HashMap<WeaponType, Entity>,
-    pub enabled_abilities: HashMap<AbilityType, Entity>,
     facing: i8,
     fire_timer: u32,
     hurt_timer: u8,
     pub hp: u8,
-    god_mode: bool,
 }
 
 impl Controller {
@@ -28,12 +26,10 @@ impl Controller {
             jump_frames: 0,
             zones: HashSet::new(),
             touched_weapons: HashMap::new(),
-            enabled_abilities: HashMap::new(),
             facing: 1,
             fire_timer: 100000,
             hurt_timer: 0,
             hp: 3,
-            god_mode: false,
         }
     }
 
@@ -135,6 +131,7 @@ impl Controller {
             }
             controller.fire_timer += 1;
             sprite.muzzle_flash = controller.fire_timer.min(100) as u8;
+            resources.abilities.update();
             if controller.fire_timer > 5 {
                 sprite.firing = false;
             }
@@ -144,22 +141,22 @@ impl Controller {
             } else {
                 sprite.blink = false;
             }
-            if controller.hp == 0 || (player.crushed && !controller.god_mode) {
+            if controller.hp == 0 || (player.crushed && !resources.abilities.has_ability(AbilityType::Invulnerability)) {
                 buffer.remove_one::<PlayerSprite>(id);
                 buffer.remove_one::<Controller>(id);
                 let (px, py) = p_rect.centre_int();
                 create_explosion(buffer, px, py);
                 resources.messages.add("You have died.".to_owned());
             }
-            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !controller.god_mode {
-                controller.god_mode = true;
+            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !resources.abilities.has_ability(AbilityType::Invulnerability) {
+                resources.abilities.new_ability(AbilityType::Invulnerability, None);
                 resources.messages.add("God mode enabled!".to_owned());
             }
         }
     }
 
-    pub fn hurt(&mut self) {
-        if self.hurt_timer == 0 && self.hp > 0 && !self.god_mode {
+    pub fn hurt(&mut self, resources: &SceneResources) {
+        if self.hurt_timer == 0 && self.hp > 0 && !resources.abilities.has_ability(AbilityType::Invulnerability) {
             self.hp -= 1;
             self.hurt_timer = 24;
         }

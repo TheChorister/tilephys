@@ -1,3 +1,4 @@
+use crate::ability::Abilities;
 use crate::index::SpatialIndex;
 use crate::level::{load_level_info, LevelInfo};
 use crate::messages::Messages;
@@ -61,6 +62,7 @@ pub struct SceneResources {
     pub stats: LevelStats,
     pub triggers: HashSet<String>,
     pub weapons: VecDeque<Box<dyn Weapon>>,
+    pub abilities: Abilities,
 }
 
 #[derive(Clone)]
