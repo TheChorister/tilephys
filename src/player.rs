@@ -1,3 +1,4 @@
+use crate::ability::AbilityType;
 use crate::draw::PlayerSprite;
 use crate::input::{Input, VirtualKey};
 use crate::physics::{Actor, IntRect, Secrecy, TriggerZone};
@@ -13,7 +14,7 @@ pub struct Controller {
     jump_frames: u32,
     zones: HashSet<String>,
     pub touched_weapons: HashMap<WeaponType, Entity>,
-    pub enabled_abilites: HashMap<AbilityType, Entity>,
+    pub enabled_abilities: HashMap<AbilityType, Entity>,
     facing: i8,
     fire_timer: u32,
     hurt_timer: u8,
@@ -27,6 +28,7 @@ impl Controller {
             jump_frames: 0,
             zones: HashSet::new(),
             touched_weapons: HashMap::new(),
+            enabled_abilities: HashMap::new(),
             facing: 1,
             fire_timer: 100000,
             hurt_timer: 0,

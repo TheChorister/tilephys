@@ -2,15 +2,12 @@ fn init() {
     door.set_path(door_path);
     door2.set_path(door_path);
     door3.set_path(door_path);
-    finaldoor.set_path(door);
     hatchleft.set_path(hatchleft_path);
     hatchright.set_path(hatchright_path);
-    door2.set_path(door_path);
     lift.set_path(lift_path);
-
 }
 
-fn door_interact() {
+fn door_switch_interact() {
     door.go_to(1, 1.0)
 }
 
@@ -18,7 +15,7 @@ fn door2_interact() {
     door2.go_to(1, 1.0)
 }
 
-fn door3_interact() {
+fn door3_switch_interact() {
     door3.go_to(1, 1.0);
 }
 

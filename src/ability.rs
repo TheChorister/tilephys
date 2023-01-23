@@ -1,16 +1,18 @@
-use crate::physics::IntRect;
+use crate::input::KeyState;
+use crate::physics::{Actor, IntRect};
+use hecs::CommandBuffer;
 use crate::draw::PlayerSprite;
 use macroquad::time::get_time;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum AbilityType {
-    Ivulnerability,
+    Invulnerability,
     Flying,
 }
 
 pub fn ability_name(ability: AbilityType) -> &'static str {
     match ability {
-        AbilityType::Ivulnerability => "invulnerability",
+        AbilityType::Invulnerability => "invulnerability",
         AbilityType::Flying => "flying",
     }
 }
@@ -28,18 +30,18 @@ pub trait Ability {
 
 
 struct Invulnerability {
-    timeAllowed: f64
-    timeRemaining: f64,
+    time_allowed: f64,
+    time_remaining: f64,
     start_time: f64,
     enabled: bool
 }
 
 
 impl Invulnerability {
-    fn new(timeAllowed: f64) -> Self {
+    fn new(time_allowed: f64) -> Self {
         Self {
-            timeAllowed,
-            timeRemaining: timeAllowed,
+            time_allowed,
+            time_remaining: time_allowed,
             start_time: get_time(),
             enabled: true
         }
@@ -57,9 +59,10 @@ impl Ability for Invulnerability {
         player_rect: &IntRect,
         key_state: KeyState,
     ) -> bool {
-        self.timeRemaining = self.timeAllowed - self.start_time;
-        if self.timeRemaining <= 0 {
+        self.time_remaining = self.time_allowed - self.start_time;
+        if self.time_remaining <= 0. {
             self.enabled = false;
         }
+        false
     }
 }

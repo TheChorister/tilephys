@@ -1,4 +1,3 @@
-use crate::ability::{AbilityType};
 use crate::physics::{Actor, IntRect};
 use crate::player::Controller;
 use crate::resources::SceneResources;
@@ -88,9 +87,4 @@ impl WeaponPickup {
         c.touched_weapons = new_touched;
         Some(())
     }
-}
-
-pub struct AbilityPickup {
-    touched: bool,
-    typ: AbilityType,
 }
