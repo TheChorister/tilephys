@@ -15,6 +15,7 @@ use timer::Timer;
 use transition::TransitionEffectType;
 use vfx::update_vfx;
 
+mod ability;
 mod camera;
 mod draw;
 mod enemy;
