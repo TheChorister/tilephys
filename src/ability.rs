@@ -2,59 +2,45 @@ use crate::resources::SceneResources;
 use macroquad::time::get_time;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub enum AbilityType {
+pub enum AbilityTypeRaw {
     Invulnerability,
     Flight,
 }
 
-pub fn ability_name(ability: AbilityType) -> &'static str {
+pub enum AbilityType {
+    Invulnerability(f64, Option<f64>),
+    Flight(f64, Option<f64>),
+}
+
+pub fn ability_name(ability: AbilityTypeRaw) -> &'static str {
     match ability {
-        AbilityType::Invulnerability => "invulnerability",
-        AbilityType::Flight => "flight",
+        AbilityTypeRaw::Invulnerability => "invulnerability",
+        AbilityTypeRaw::Flight => "flight",
     }
 }
 
-pub fn ability_name_adj(ability: AbilityType) -> &'static str {
+pub fn ability_name_adj(ability: AbilityTypeRaw) -> &'static str {
     match ability {
-        AbilityType::Invulnerability => "invulnerable",
-        AbilityType::Flight => "flying",
+        AbilityTypeRaw::Invulnerability => "invulnerable",
+        AbilityTypeRaw::Flight => "flying",
     }
 }
 
-pub trait Ability {
-    fn get_type(&self) -> AbilityType;
-    fn update(&self) -> bool;
-    fn get_remaining_time(&self) -> f64;
-}
+impl AbilityType {
 
-
-struct Invulnerability {
-    time_allowed: Option<f64>,
-    pub time_remaining: f64,
-    start_time: f64,
-}
-
-
-impl Invulnerability {
-    fn new(time_allowed: Option<f64>) -> Self {
-        Self {
-            time_allowed,
-            time_remaining: time_allowed.unwrap_or(get_time() + 1.),
-            start_time: get_time(),
+    fn get_remaining_time_from_args(start_time: f64, time_allowed: Option<f64>) -> f64 {
+        match time_allowed {
+            Some(t) => t + start_time - get_time(),
+            None => 1.,
         }
-    }
-}
-
-impl Ability for Invulnerability {
-    fn get_type(&self) -> AbilityType {
-        AbilityType::Invulnerability
     }
 
     fn get_remaining_time(&self) -> f64 {
-        match self.time_allowed {
-            Some(t) => t + self.start_time - get_time(),
-            None => 1.,
+        match self {
+            AbilityType::Invulnerability(start_time, time_allowed) => Self::get_remaining_time_from_args(*start_time, *time_allowed),
+            AbilityType::Flight(start_time, time_allowed) => Self::get_remaining_time_from_args(*start_time, *time_allowed),
         }
+        
     }
 
     fn update(&self) -> bool {
@@ -62,15 +48,8 @@ impl Ability for Invulnerability {
     }
 }
 
-pub fn new_ability(typ: AbilityType, time_allowed: Option<f64>) -> Box<dyn Ability> {
-    match typ {
-        AbilityType::Invulnerability => Box::new(Invulnerability::new(time_allowed)),
-        AbilityType::Flight => Box::new(Invulnerability::new(time_allowed)),
-    }
-}
-
 pub struct Abilities {
-    _abilities: Vec<Box<dyn Ability>>,
+    _abilities: Vec<AbilityType>,
 }
 
 impl Abilities {
@@ -80,8 +59,8 @@ impl Abilities {
         }
     }
 
-    pub fn new_ability(&mut self, typ: AbilityType, time_allowed: Option<f64>) {
-        self._abilities.push(new_ability(typ, time_allowed));
+    pub fn new_ability(&mut self, ability: AbilityType) {
+        self._abilities.push(ability);
     }
 
     pub fn has_ability(&self, typ: AbilityType) -> bool {

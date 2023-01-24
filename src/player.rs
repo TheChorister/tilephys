@@ -1,4 +1,4 @@
-use crate::ability::{AbilityType, Ability};
+use crate::ability::AbilityType;
 use crate::draw::PlayerSprite;
 use crate::input::{Input, VirtualKey};
 use crate::physics::{Actor, IntRect, Secrecy, TriggerZone};
