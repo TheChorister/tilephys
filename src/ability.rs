@@ -1,35 +1,37 @@
-use std::collections::HashSet;
-
-use crate::input::KeyState;
-use crate::physics::{Actor, IntRect};
-use hecs::CommandBuffer;
-use crate::draw::PlayerSprite;
+use crate::resources::SceneResources;
 use macroquad::time::get_time;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum AbilityType {
     Invulnerability,
-    Flying,
+    Flight,
 }
 
 pub fn ability_name(ability: AbilityType) -> &'static str {
     match ability {
         AbilityType::Invulnerability => "invulnerability",
-        AbilityType::Flying => "flying",
+        AbilityType::Flight => "flight",
+    }
+}
+
+pub fn ability_name_adj(ability: AbilityType) -> &'static str {
+    match ability {
+        AbilityType::Invulnerability => "invulnerable",
+        AbilityType::Flight => "flying",
     }
 }
 
 pub trait Ability {
     fn get_type(&self) -> AbilityType;
-    fn update(&mut self);
+    fn update(&self) -> bool;
+    fn get_remaining_time(&self) -> f64;
 }
 
 
 struct Invulnerability {
     time_allowed: Option<f64>,
-    time_remaining: f64,
+    pub time_remaining: f64,
     start_time: f64,
-    enabled: bool
 }
 
 
@@ -39,7 +41,6 @@ impl Invulnerability {
             time_allowed,
             time_remaining: time_allowed.unwrap_or(get_time() + 1.),
             start_time: get_time(),
-            enabled: true
         }
     }
 }
@@ -48,18 +49,23 @@ impl Ability for Invulnerability {
     fn get_type(&self) -> AbilityType {
         AbilityType::Invulnerability
     }
-    fn update(&mut self) {
-        self.time_remaining = self.time_allowed.unwrap_or(self.start_time + 1.) - self.start_time;
-        if self.time_remaining <= 0. {
-            self.enabled = false;
+
+    fn get_remaining_time(&self) -> f64 {
+        match self.time_allowed {
+            Some(t) => t + self.start_time - get_time(),
+            None => 1.,
         }
+    }
+
+    fn update(&self) -> bool {
+        self.get_remaining_time() <= 0.
     }
 }
 
 pub fn new_ability(typ: AbilityType, time_allowed: Option<f64>) -> Box<dyn Ability> {
     match typ {
         AbilityType::Invulnerability => Box::new(Invulnerability::new(time_allowed)),
-        AbilityType::Flying => Box::new(Invulnerability::new(time_allowed)),
+        AbilityType::Flight => Box::new(Invulnerability::new(time_allowed)),
     }
 }
 
@@ -87,5 +93,15 @@ impl Abilities {
         false
     }
 
-    pub fn update(&self) {}
+    pub fn lose_ability(&mut self, i: usize) {
+        self._abilities.remove(i);
+    }
+
+    pub fn update(&mut self) {
+        for (i, ability) in self._abilities.iter_mut().enumerate() {
+            if !ability.update() {
+                self._abilities.remove(i);
+            }
+        }
+    }
 }
