@@ -9,7 +9,7 @@ fn init() {
 
 fn door_switch_interact() {
     door.go_to(1, 1.0);
-    context.learn(flight);
+    context.learn(tunneling);
 }
 
 fn door2_interact() {
