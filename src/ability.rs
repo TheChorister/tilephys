@@ -13,33 +13,49 @@ pub fn ability_name(ability: AbilityType) -> &'static str {
     }
 }
 
-pub fn ability_name_adj(ability: AbilityType) -> &'static str {
+pub fn ability_name_verb(ability: AbilityType) -> &'static str {
     match ability {
-        AbilityType::Invulnerability => "invulnerable",
-        AbilityType::Flight => "flying",
+        AbilityType::Invulnerability => "be invulnerable",
+        AbilityType::Flight => "fly",
     }
 }
 
 pub struct Abilities {
     _abilities: HashSet<AbilityType>,
+    pub learn_queue: HashSet<AbilityType>,
+    pub forget_queue: HashSet<AbilityType>,
 }
 
 impl Abilities {
     pub fn new() -> Self {
         Self {
             _abilities: HashSet::new(),
+            learn_queue: HashSet::new(),
+            forget_queue: HashSet::new(),
         }
     }
 
     pub fn learn(&mut self, ability: AbilityType) {
-        self._abilities.insert(ability);
+        self.learn_queue.insert(ability);
     }
 
     pub fn forget(&mut self, ability: AbilityType) {
-        self._abilities.remove(&ability);
+        self.forget_queue.insert(ability);
     }
 
     pub fn can(&self, ability: AbilityType) -> bool {
         self._abilities.contains(&ability)
     }
+
+    pub fn update(&mut self) {
+        for ability in self.learn_queue.iter() {
+            self._abilities.insert(*ability);
+        }
+        for ability in self.forget_queue.iter() {
+            self._abilities.remove(ability);
+        }
+        self.learn_queue.clear();
+        self.forget_queue.clear();
+    }
+
 }

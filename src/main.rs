@@ -116,6 +116,7 @@ async fn main() {
                     Pickup::update(resources, &mut buffer);
                     WeaponPickup::update(resources);
                     Controller::update(resources, &mut buffer, &input);
+                    resources.abilities.lock().unwrap().update();
                     update_enemies(resources, &mut buffer);
                     Actor::update(resources);
                     Projectile::update(resources, &mut buffer);

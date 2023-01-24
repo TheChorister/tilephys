@@ -1,4 +1,4 @@
-use crate::ability::AbilityType;
+use crate::ability::{AbilityType, ability_name_verb};
 use crate::draw::PlayerSprite;
 use crate::input::{Input, VirtualKey};
 use crate::physics::{Actor, IntRect, Secrecy, TriggerZone};
@@ -53,6 +53,15 @@ impl Controller {
                     new_zones.insert(trigger.name.clone());
                 }
             }
+
+            for ability in resources.abilities.lock().unwrap().learn_queue.iter() {
+                resources.messages.add(format!("Learned how to {}!", ability_name_verb(*ability)).to_owned());
+            }
+
+            for ability in resources.abilities.lock().unwrap().forget_queue.iter() {
+                resources.messages.add(format!("Forgotten how to {}!", ability_name_verb(*ability)).to_owned());
+            }
+
             for z in &controller.zones {
                 if !new_zones.contains(z) {
                     resources.triggers.insert(format!("{}_exit", z).to_owned());

@@ -18,6 +18,7 @@ fn door2_interact() {
 
 fn door3_switch_interact() {
     door3.go_to(1, 1.0);
+    context.forget(flight);
 }
 
 fn hatch_trigger_enter() {

@@ -87,6 +87,10 @@ mod script_interface {
         this.lock().unwrap().abilities.lock().unwrap().learn(ability);
     }
 
+    pub fn forget(this: &mut Flags, ability: AbilityType) {
+        this.lock().unwrap().abilities.lock().unwrap().forget(ability);
+    }
+
     pub fn after_frames(this: &mut Flags, n: rhai::INT, func: FnPtr) {
         this.lock().unwrap().queued_funcs.push((n, func));
     }
