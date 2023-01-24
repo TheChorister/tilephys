@@ -101,17 +101,23 @@ impl Controller {
                     }
                 }
             }
-            if player.grounded && input.is_pressed(VirtualKey::Jump) {
-                player.vy = -6.0;
+
+            if resources.abilities.lock().unwrap().can(AbilityType::Flight) && input.is_down(VirtualKey::Jump) {
+                player.vy = -6.;
                 controller.jump_frames = 5;
-            } else if controller.jump_frames > 0
-                && input.is_down(VirtualKey::Jump)
-                && player.vy < 0.0
-            {
-                player.vy = -10.0;
-                controller.jump_frames -= 1;
             } else {
-                controller.jump_frames = 0;
+                if player.grounded && input.is_pressed(VirtualKey::Jump) {
+                    player.vy = -6.0;
+                    controller.jump_frames = 5;
+                } else if controller.jump_frames > 0
+                    && input.is_down(VirtualKey::Jump)
+                    && player.vy < 0.0
+                {
+                    player.vy = -10.0;
+                    controller.jump_frames -= 1;
+                } else {
+                    controller.jump_frames = 0;
+                }
             }
             if player.grounded {
                 sprite.n += player.vx.abs() as i32;

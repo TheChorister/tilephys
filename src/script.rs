@@ -1,4 +1,4 @@
-use crate::ability::Abilities;
+use crate::ability::{Abilities, AbilityType};
 use crate::physics::{PathMotion, PathMotionType, TileBody};
 use crate::switch::Switch;
 use hecs::{Entity, World};
@@ -24,13 +24,15 @@ impl ScriptEntityProxy {
 pub struct ScriptFlags {
     win: bool,
     queued_funcs: Vec<(rhai::INT, FnPtr)>,
+    abilities: Arc<Mutex<Abilities>>,
 }
 
 impl ScriptFlags {
-    fn new() -> Self {
+    fn new(abilities: Arc<Mutex<Abilities>>) -> Self {
         Self {
             win: false,
             queued_funcs: Vec::new(),
+            abilities,
         }
     }
 }
@@ -81,6 +83,10 @@ mod script_interface {
 
     // Context methods
 
+    pub fn learn(this: &mut Flags, ability: AbilityType) {
+        this.lock().unwrap().abilities.lock().unwrap().learn(ability);
+    }
+
     pub fn after_frames(this: &mut Flags, n: rhai::INT, func: FnPtr) {
         this.lock().unwrap().queued_funcs.push((n, func));
     }
@@ -114,7 +120,7 @@ impl ScriptEngine {
     ) -> Self {
         let mut engine = Engine::new_raw();
         let mut scope = Scope::new();
-        let flags = Arc::new(Mutex::new(ScriptFlags::new()));
+        let flags = Arc::new(Mutex::new(ScriptFlags::new(abilities)));
 
         let pkg = ScriptPackage::new();
         pkg.register_into_engine(&mut engine);
@@ -122,7 +128,9 @@ impl ScriptEngine {
         scope.push("static", PathMotionType::Static);
         scope.push("forward_once", PathMotionType::ForwardOnce);
         scope.push("forward_cycle", PathMotionType::ForwardCycle);
-        scope.push("abilities", abilities);
+        //scope.push("abilities", Arc::clone(&abilities));
+        scope.push("invulnerability", AbilityType::Invulnerability);
+        scope.push("flight", AbilityType::Flight);
         for (name, id) in ids.iter() {
             scope.push(name, ScriptEntityProxy::new(Arc::clone(&world_ref), *id));
         }

@@ -8,11 +8,12 @@ fn init() {
 }
 
 fn door_switch_interact() {
-    door.go_to(1, 1.0)
+    door.go_to(1, 1.0);
+    context.learn(flight);
 }
 
 fn door2_interact() {
-    door2.go_to(1, 1.0)
+    door2.go_to(1, 1.0);
 }
 
 fn door3_switch_interact() {
