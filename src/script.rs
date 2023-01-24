@@ -131,7 +131,6 @@ impl ScriptEngine {
         //scope.push("abilities", Arc::clone(&abilities));
         scope.push("invulnerability", AbilityType::Invulnerability);
         scope.push("flight", AbilityType::Flight);
-        scope.push("tunneling", AbilityType::QuantumTunneling);
         for (name, id) in ids.iter() {
             scope.push(name, ScriptEntityProxy::new(Arc::clone(&world_ref), *id));
         }

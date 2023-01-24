@@ -244,7 +244,6 @@ impl TileBody {
 pub struct Actor {
     prec_x: f32,
     prec_y: f32,
-    pub collidable: bool,
     pub vx: f32,
     pub vy: f32,
     pub grounded: bool,
@@ -253,11 +252,10 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(rect: &IntRect, drag: f32, collidable: bool) -> Self {
+    pub fn new(rect: &IntRect, drag: f32) -> Self {
         Self {
             prec_x: rect.x as f32,
             prec_y: rect.y as f32,
-            collidable,
             vx: 0.0,
             vy: 0.0,
             grounded: false,
@@ -425,7 +423,7 @@ pub fn collide_any(world: &World, body_index: &SpatialIndex, rect: &IntRect) -> 
     })
 }
 
-pub fn move_actor(
+fn move_actor(
     actor: &mut Actor,
     rect: &mut IntRect,
     vx: f32,

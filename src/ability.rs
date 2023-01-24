@@ -4,14 +4,12 @@ use std::collections::HashSet;
 pub enum AbilityType {
     Invulnerability,
     Flight,
-    QuantumTunneling,
 }
 
 pub fn ability_name(ability: AbilityType) -> &'static str {
     match ability {
         AbilityType::Invulnerability => "invulnerability",
         AbilityType::Flight => "flight",
-        AbilityType::QuantumTunneling => "quantum tunneling ability",
     }
 }
 
@@ -19,7 +17,6 @@ pub fn ability_name_adj(ability: AbilityType) -> &'static str {
     match ability {
         AbilityType::Invulnerability => "invulnerable",
         AbilityType::Flight => "flying",
-        AbilityType::QuantumTunneling => "quantum tunneling",
     }
 }
 
