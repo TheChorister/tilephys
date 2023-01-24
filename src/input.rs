@@ -88,12 +88,14 @@ const WVDC: i32 = WALL_VISION_DEPTH as i32
     + (((WALL_VISION_DEPTH as i32) as f32 - WALL_VISION_DEPTH)
         / ((WALL_VISION_DEPTH as i32) as f32 - WALL_VISION_DEPTH)) as i32;
 
-const ALL_TRIGGERS: [Trigger; 12] = [
+const ALL_TRIGGERS: [Trigger; 14] = [
     Trigger::Key(KeyTrigger { kc: KeyCode::Left, vk: VirtualKey::Left }),
     Trigger::Key(KeyTrigger { kc: KeyCode::Right, vk: VirtualKey::Right }),
     Trigger::Key(KeyTrigger { kc: KeyCode::Z, vk: VirtualKey::Jump }),
     Trigger::Key(KeyTrigger { kc: KeyCode::X, vk: VirtualKey::Fire }),
     Trigger::Key(KeyTrigger { kc: KeyCode::C, vk: VirtualKey::Interact }),
+    Trigger::Key(KeyTrigger { kc: KeyCode::A, vk: VirtualKey::PrevWeapon }),
+    Trigger::Key(KeyTrigger { kc: KeyCode::S, vk: VirtualKey::NextWeapon }),
     Trigger::Key(KeyTrigger { kc: KeyCode::R, vk: VirtualKey::DebugRestart }),
     Trigger::Key(KeyTrigger { kc: KeyCode::W, vk: VirtualKey::DebugWin }),
     Trigger::Key(KeyTrigger { kc: KeyCode::K, vk: VirtualKey::DebugKill }),
