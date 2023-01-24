@@ -28,6 +28,7 @@ pub enum VirtualKey {
     Jump,
     Fire,
     Interact,
+    Tunnel,
     PrevWeapon,
     NextWeapon,
     DebugRestart,
@@ -88,12 +89,13 @@ const WVDC: i32 = WALL_VISION_DEPTH as i32
     + (((WALL_VISION_DEPTH as i32) as f32 - WALL_VISION_DEPTH)
         / ((WALL_VISION_DEPTH as i32) as f32 - WALL_VISION_DEPTH)) as i32;
 
-const ALL_TRIGGERS: [Trigger; 14] = [
+const ALL_TRIGGERS: [Trigger; 15] = [
     Trigger::Key(KeyTrigger { kc: KeyCode::Left, vk: VirtualKey::Left }),
     Trigger::Key(KeyTrigger { kc: KeyCode::Right, vk: VirtualKey::Right }),
     Trigger::Key(KeyTrigger { kc: KeyCode::Z, vk: VirtualKey::Jump }),
     Trigger::Key(KeyTrigger { kc: KeyCode::X, vk: VirtualKey::Fire }),
     Trigger::Key(KeyTrigger { kc: KeyCode::C, vk: VirtualKey::Interact }),
+    Trigger::Key(KeyTrigger { kc: KeyCode:: T, vk: VirtualKey::Tunnel }),
     Trigger::Key(KeyTrigger { kc: KeyCode::A, vk: VirtualKey::PrevWeapon }),
     Trigger::Key(KeyTrigger { kc: KeyCode::S, vk: VirtualKey::NextWeapon }),
     Trigger::Key(KeyTrigger { kc: KeyCode::R, vk: VirtualKey::DebugRestart }),

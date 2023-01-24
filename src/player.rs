@@ -1,7 +1,7 @@
 use crate::ability::AbilityType;
 use crate::draw::PlayerSprite;
 use crate::input::{Input, VirtualKey};
-use crate::physics::{Actor, IntRect, Secrecy, TriggerZone};
+use crate::physics::{Actor, IntRect, Secrecy, TriggerZone, collide_any};
 use crate::resources::SceneResources;
 use crate::switch::Switch;
 use crate::vfx::create_explosion;
@@ -102,7 +102,15 @@ impl Controller {
                 }
             }
 
-            if resources.abilities.lock().unwrap().can(AbilityType::Flight) && input.is_down(VirtualKey::Jump) {
+            // If player is already in wall, allow to escape
+            if resources.abilities.lock().unwrap().can(AbilityType::QuantumTunneling) && input.is_down(VirtualKey::Tunnel) || collide_any(&world, &resources.body_index, p_rect) {
+                player.collidable = false;
+            } else {
+                player.collidable = true;
+            }
+
+            // If able to tunnel and in wall, allow flying
+            if ((resources.abilities.lock().unwrap().can(AbilityType::Flight) || (resources.abilities.lock().unwrap().can(AbilityType::QuantumTunneling) && collide_any(&world, &resources.body_index, p_rect))) && input.is_down(VirtualKey::Jump)) {
                 player.vy = -6.;
                 controller.jump_frames = 5;
             } else {

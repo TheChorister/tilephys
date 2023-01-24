@@ -12,7 +12,7 @@ pub struct Pickup {
 pub fn add_pickup(world: &mut World, x: i32, y: i32) {
     let rect = IntRect::new(x - 8, y - 16, 16, 16);
     let draw = crate::draw::PickupSprite::new();
-    let actor = Actor::new(&rect, 0.4);
+    let actor = Actor::new(&rect, 0.4, true);
     world.spawn((rect, draw, actor, Pickup { touched: false }));
 }
 
@@ -48,7 +48,7 @@ pub struct WeaponPickup {
 pub fn add_weapon(world: &mut World, x: i32, y: i32, typ: WeaponType) {
     let rect = IntRect::new(x - 8, y - 16, 16, 16);
     let draw = crate::draw::ColorRect::new(macroquad::color::ORANGE);
-    let actor = Actor::new(&rect, 0.4);
+    let actor = Actor::new(&rect, 0.4, true);
     world.spawn((
         rect,
         draw,
