@@ -131,7 +131,6 @@ impl Controller {
             }
             controller.fire_timer += 1;
             sprite.muzzle_flash = controller.fire_timer.min(100) as u8;
-            resources.abilities.update();
             if controller.fire_timer > 5 {
                 sprite.firing = false;
             }
@@ -148,8 +147,8 @@ impl Controller {
                 create_explosion(buffer, px, py);
                 resources.messages.add("You have died.".to_owned());
             }
-            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !resources.abilities.has_ability(AbilityType::Invulnerability) {
-                resources.abilities.new_ability(AbilityType::Invulnerability, None);
+            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !resources.abilities.can(AbilityType::Invulnerability) {
+                resources.abilities.learn(AbilityType::Invulnerability);
                 resources.messages.add("God mode enabled!".to_owned());
             }
         }
