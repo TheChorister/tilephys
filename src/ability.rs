@@ -1,4 +1,5 @@
-use crate::resources::SceneResources;
+use std::collections::HashSet;
+
 use macroquad::time::get_time;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -37,10 +38,10 @@ impl Abilities {
     }
 
     pub fn forget(&mut self, ability: AbilityType) {
-        self._abilities.remove(ability);
+        self._abilities.remove(&ability);
     }
 
     pub fn can(&self, ability: AbilityType) -> bool {
-        self._abilities.contains(AbilityType);
+        self._abilities.contains(&ability)
     }
 }

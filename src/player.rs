@@ -9,6 +9,7 @@ use crate::weapon::{new_weapon, weapon_name, weapon_name_indef, WeaponType};
 use hecs::{CommandBuffer, Entity};
 use macroquad::prelude::{is_key_down, KeyCode};
 use std::collections::{HashMap, HashSet};
+use rhai::Shared;
 
 pub struct Controller {
     jump_frames: u32,
@@ -140,7 +141,7 @@ impl Controller {
             } else {
                 sprite.blink = false;
             }
-            if controller.hp == 0 || (player.crushed && !resources.abilities.has_ability(AbilityType::Invulnerability)) {
+            if controller.hp == 0 || (player.crushed && ! resources.abilities.can(AbilityType::Invulnerability)) {
                 buffer.remove_one::<PlayerSprite>(id);
                 buffer.remove_one::<Controller>(id);
                 let (px, py) = p_rect.centre_int();
@@ -155,7 +156,7 @@ impl Controller {
     }
 
     pub fn hurt(&mut self, resources: &SceneResources) {
-        if self.hurt_timer == 0 && self.hp > 0 && !resources.abilities.has_ability(AbilityType::Invulnerability) {
+        if self.hurt_timer == 0 && self.hp > 0 && ! resources.abilities.can(AbilityType::Invulnerability) {
             self.hp -= 1;
             self.hurt_timer = 24;
         }

@@ -336,9 +336,8 @@ impl LoadingManager {
         }
 
         let world_ref = Arc::new(Mutex::new(world));
-        let mut abilities = Arc::new(Mutex::new(Abilities::new()));
         let mut script_engine =
-            ScriptEngine::new(Arc::clone(&world_ref), Arc::new(ids), Arc::new(paths), abilities);
+            ScriptEngine::new(Arc::clone(&world_ref), Arc::new(ids), Arc::new(paths));
         script_engine
             .load_file(&format!("{}.rhai", info.path))
             .await;
@@ -379,7 +378,7 @@ impl LoadingManager {
             stats,
             triggers: HashSet::new(),
             weapons,
-            abilities,
+            abilities: Abilities::new(),
         };
         Ok(Scene::PlayLevel(resources))
     }

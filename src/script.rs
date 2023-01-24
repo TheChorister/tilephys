@@ -110,7 +110,6 @@ impl ScriptEngine {
         world_ref: Arc<Mutex<World>>,
         ids: Arc<HashMap<String, Entity>>,
         paths: Arc<HashMap<String, Vec<(f32, f32)>>>,
-        abilities: Arc<Mutex<Abilities>>,
     ) -> Self {
         let mut engine = Engine::new_raw();
         let mut scope = Scope::new();
@@ -122,7 +121,6 @@ impl ScriptEngine {
         scope.push("static", PathMotionType::Static);
         scope.push("forward_once", PathMotionType::ForwardOnce);
         scope.push("forward_cycle", PathMotionType::ForwardCycle);
-        scope.push("abilities", abilities);
         for (name, id) in ids.iter() {
             scope.push(name, ScriptEntityProxy::new(Arc::clone(&world_ref), *id));
         }
