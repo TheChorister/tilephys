@@ -1,4 +1,3 @@
-use crate::ability::AbilityType;
 use crate::index::SpatialIndex;
 use crate::loader::TileFlags;
 use crate::resources::SceneResources;
@@ -250,11 +249,10 @@ pub struct Actor {
     pub grounded: bool,
     pub crushed: bool,
     pub drag: f32,
-    is_player: bool,
 }
 
 impl Actor {
-    pub fn new(rect: &IntRect, drag: f32, is_player: bool) -> Self {
+    pub fn new(rect: &IntRect, drag: f32) -> Self {
         Self {
             prec_x: rect.x as f32,
             prec_y: rect.y as f32,
@@ -263,7 +261,6 @@ impl Actor {
             grounded: false,
             crushed: false,
             drag,
-            is_player,
         }
     }
 
@@ -273,19 +270,14 @@ impl Actor {
             actor.vy += 1.0;
             actor.vx *= actor.drag;
             actor.vy = actor.vy.min(16.0);
-            if actor.is_player && resources.abilities.lock().unwrap().can(AbilityType::QuantumTunneling) && check_player_grounded(rect, &world)  {
-                actor.prec_x += actor.vx;
-                rect.x += actor.vx as i32;
-            } else {
-                let vx = actor.vx;
-                let vy = actor.vy;
-                let (cx, cy) = move_actor(actor, rect, vx, vy, &world, &resources.body_index);
-                if cx {
-                    actor.vx = 0.0;
-                }
-                if cy {
-                    actor.vy = 0.0;
-                }
+            let vx = actor.vx;
+            let vy = actor.vy;
+            let (cx, cy) = move_actor(actor, rect, vx, vy, &world, &resources.body_index);
+            if cx {
+                actor.vx = 0.0;
+            }
+            if cy {
+                actor.vy = 0.0;
             }
             actor.grounded = check_player_grounded(rect, &world);
         }

@@ -22,7 +22,7 @@ pub fn add_enemy(world: &mut World, kind: EnemyKind, x: i32, y: i32) {
         _ => 16,
     };
     let rect = IntRect::new(x - 12, y - h, 24, h);
-    let actor = Actor::new(&rect, 0.4, false);
+    let actor = Actor::new(&rect, 0.4);
     let hittable = EnemyHittable::new(3);
     let dmg = EnemyContactDamage::new();
     if kind == EnemyKind::SpiderParrot {

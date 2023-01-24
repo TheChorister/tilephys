@@ -352,7 +352,7 @@ impl LoadingManager {
             let player_rect = IntRect::new(player_start.0 - 8, player_start.1 - 24, 14, 24);
             let player_eye = player_rect.centre();
             let camera_pos = add_camera(&mut world, player_rect.centre());
-            let player = Actor::new(&player_rect, 0.6, true);
+            let player = Actor::new(&player_rect, 0.6);
             let controller = Controller::new();
             let sprite = PlayerSprite::new();
             let player_id = world.spawn((player_rect, player, controller, sprite));
