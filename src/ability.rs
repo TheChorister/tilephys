@@ -20,3 +20,27 @@ pub fn ability_name_adj(ability: AbilityType) -> &'static str {
         AbilityType::Flight => "flying",
     }
 }
+
+pub struct Abilities {
+    _abilities: HashSet<AbilityType>,
+}
+
+impl Abilities {
+    pub fn new() -> Self {
+        Self {
+            _abilities: HashSet::new(),
+        }
+    }
+
+    pub fn learn(&mut self, ability: AbilityType) {
+        self._abilities.insert(ability);
+    }
+
+    pub fn forget(&mut self, ability: AbilityType) {
+        self._abilities.remove(ability);
+    }
+
+    pub fn can(&self, ability: AbilityType) -> bool {
+        self._abilities.contains(AbilityType);
+    }
+}
