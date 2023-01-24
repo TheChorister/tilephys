@@ -9,7 +9,6 @@ use crate::weapon::{new_weapon, weapon_name, weapon_name_indef, WeaponType};
 use hecs::{CommandBuffer, Entity};
 use macroquad::prelude::{is_key_down, KeyCode};
 use std::collections::{HashMap, HashSet};
-use rhai::Shared;
 
 pub struct Controller {
     jump_frames: u32,
@@ -141,22 +140,22 @@ impl Controller {
             } else {
                 sprite.blink = false;
             }
-            if controller.hp == 0 || (player.crushed && ! resources.abilities.can(AbilityType::Invulnerability)) {
+            if controller.hp == 0 || (player.crushed && ! resources.abilities.lock().unwrap().can(AbilityType::Invulnerability)) {
                 buffer.remove_one::<PlayerSprite>(id);
                 buffer.remove_one::<Controller>(id);
                 let (px, py) = p_rect.centre_int();
                 create_explosion(buffer, px, py);
                 resources.messages.add("You have died.".to_owned());
             }
-            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !resources.abilities.can(AbilityType::Invulnerability) {
-                resources.abilities.learn(AbilityType::Invulnerability);
+            if is_key_down(KeyCode::Q) && is_key_down(KeyCode::D) && !resources.abilities.lock().unwrap().can(AbilityType::Invulnerability) {
+                resources.abilities.lock().unwrap().learn(AbilityType::Invulnerability);
                 resources.messages.add("God mode enabled!".to_owned());
             }
         }
     }
 
     pub fn hurt(&mut self, resources: &SceneResources) {
-        if self.hurt_timer == 0 && self.hp > 0 && ! resources.abilities.can(AbilityType::Invulnerability) {
+        if self.hurt_timer == 0 && self.hp > 0 && ! resources.abilities.lock().unwrap().can(AbilityType::Invulnerability) {
             self.hp -= 1;
             self.hurt_timer = 24;
         }

@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use macroquad::time::get_time;
-
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum AbilityType {
     Invulnerability,

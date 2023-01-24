@@ -62,7 +62,7 @@ pub struct SceneResources {
     pub stats: LevelStats,
     pub triggers: HashSet<String>,
     pub weapons: VecDeque<Box<dyn Weapon>>,
-    pub abilities: Abilities,
+    pub abilities: Arc<Mutex<Abilities>>,
 }
 
 #[derive(Clone)]
