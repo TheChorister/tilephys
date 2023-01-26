@@ -1,9 +1,6 @@
-use crate::{
-    physics::IntRect,
-    render::{Renderer, WALL_VISION_DEPTH},
-    RENDER_H, RENDER_W,
-};
-use enum_iterator::Sequence;
+use crate::physics::IntRect;
+use crate::render::{Renderer, WALL_VISION_DEPTH};
+use crate::{RENDER_H, RENDER_W};
 use macroquad::{
     input::{
         get_char_pressed, is_key_down, is_key_pressed, is_mouse_button_down,
@@ -125,7 +122,7 @@ const ALL_TRIGGERS: [Trigger; 14] = [
     }, mb: MouseButton::Left, vk: VirtualKey::Interact }),
 ];
 
-#[derive(Sequence, Debug)]
+#[derive(Debug)]
 pub enum ScreenButtons {
     Left,
     Jump,
@@ -178,6 +175,13 @@ impl ScreenButtons {
         }
     }
 }
+
+pub const SCREEN_BUTTONS: [ScreenButtons; 4] = [
+    ScreenButtons::Left,
+    ScreenButtons::Jump,
+    ScreenButtons::Right,
+    ScreenButtons::Interact,
+];
 
 pub struct Input {
     down: HashSet<VirtualKey>,

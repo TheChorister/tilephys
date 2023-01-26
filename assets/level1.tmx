@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.8" tiledversion="1.8.0" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="1" nextlayerid="24" nextobjectid="54">
+<map version="1.8" tiledversion="1.8.0" orientation="orthogonal" renderorder="right-down" width="40" height="30" tilewidth="16" tileheight="16" infinite="1" nextlayerid="25" nextobjectid="55">
  <tileset firstgid="1" source="phtiles16.tsx"/>
  <layer id="14" name="background" width="40" height="30">
   <data encoding="base64" compression="zlib">
@@ -63,6 +63,13 @@
   <data encoding="base64" compression="zlib">
    <chunk x="16" y="0" width="16" height="16">
    eJxjYBh6gBGKR8EoGAWUAQAKlAAD
+  </chunk>
+  </data>
+ </layer>
+ <layer id="24" name="hatchplatform" width="40" height="30">
+  <data encoding="base64" compression="zlib">
+   <chunk x="0" y="-16" width="16" height="16">
+   eJxjYBgFo2AUDFXADMQsUMxKhn4AB5QAEQ==
   </chunk>
   </data>
  </layer>
@@ -189,6 +196,9 @@
    <point/>
   </object>
   <object id="37" type="heart" x="368" y="64">
+   <point/>
+  </object>
+  <object id="54" type="heart" x="16" y="-16">
    <point/>
   </object>
   <object id="39" type="heart" x="128" y="48">

@@ -6,13 +6,6 @@ pub enum AbilityType {
     Flight,
 }
 
-pub fn ability_name(ability: AbilityType) -> &'static str {
-    match ability {
-        AbilityType::Invulnerability => "invulnerability",
-        AbilityType::Flight => "flight",
-    }
-}
-
 pub fn ability_name_verb(ability: AbilityType) -> &'static str {
     match ability {
         AbilityType::Invulnerability => "be invulnerable",

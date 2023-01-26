@@ -1,6 +1,6 @@
 use crate::draw::draw;
 use crate::level::LevelInfo;
-use crate::input::{Input, ScreenButtons};
+use crate::input::{Input, SCREEN_BUTTONS};
 use crate::messages::Messages;
 use crate::player::Controller;
 use crate::resources::{GlobalAssets, SceneResources};
@@ -9,7 +9,6 @@ use crate::stats::LevelStats;
 use crate::transition::{new_transition, TransitionEffect, TransitionEffectType};
 use crate::vfx::draw_vfx;
 use crate::visibility::draw_visibility;
-use enum_iterator::all;
 use macroquad::prelude::*;
 use miniquad::graphics::{BlendFactor, BlendState, BlendValue, Equation};
 
@@ -464,7 +463,7 @@ impl Renderer {
             );
         }
 
-        for btn in all::<ScreenButtons>() {
+        for btn in SCREEN_BUTTONS.iter() {
             draw_texture_ex(
                 assets.controls,
                 btn.get_pos().0 as f32,
